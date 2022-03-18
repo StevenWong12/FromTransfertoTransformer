@@ -206,4 +206,3 @@ if __name__ == '__main__':
         save_finetune_result(args, torch.mean(accuracies), torch.var(accuracies))
         print('Done!')
 
-# TODO 保存结果

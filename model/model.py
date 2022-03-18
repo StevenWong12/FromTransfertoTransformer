@@ -138,12 +138,30 @@ class Classifier(nn.Module):
         
         return self.softmax(self.dense(x))
 
+class NonLinearClassifier(nn.Module):
+    def __init__(self, input_dim, embedding_dim, output_dim, dropout=0.2) -> None:
+        super(NonLinearClassifier, self).__init__()
+
+        self.net = nn.Sequential(
+            nn.Linear(input_dim, embedding_dim),
+            nn.BatchNorm1d(embedding_dim),
+            nn.ReLU(),
+            nn.Dropout(dropout),
+            nn.Linear(embedding_dim, output_dim)
+        )
+
+    def forward(self, x):
+        return self.net(x)
+
+
 class RNNDecoder(nn.Module):
     def __init__(self) -> None:
         super(RNNDecoder, self).__init__()
 
     def forward(self, x):
         pass
+
+
 
 
 if __name__ == '__main__':

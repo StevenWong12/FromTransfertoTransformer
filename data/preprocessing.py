@@ -26,12 +26,14 @@ def load_data(dataroot, dataset):
 
 def split_raw_and_test(data, target):
     sss = StratifiedShuffleSplit(n_splits=1, test_size=0.2)
-    
+    data = np.array(data)
+    target = np.array(target)
+
     for train_index, test_index in sss.split(data, target):
-        return np.array(list(map(lambda x :data[x], train_index))), np.array(list(map(lambda x :target[x], train_index))),np.array(list(map(lambda x:data[x], test_index))),np.array(list(map(lambda x:target[x], test_index)))
-    
+        return data[train_index], target[train_index], data[test_index], target[test_index]
         
 
+# only use
 def normalize(dataset):
     normalizer = preprocessing.StandardScaler()
     return normalizer.fit_transform(dataset)
@@ -65,7 +67,51 @@ def get_k_fold(data, target):
         training_target.append(train_y)
 
     return training_data, training_target, val_data, val_target
+
+# v2. use k_fold to get the whole tran val test set
+
+def normalize_test_set(test_data, mean, var):
+    return (test_data-mean)/var
+
+def k_fold(data: np.ndarray, target:np.ndarray):
+    skf = StratifiedKFold(5, shuffle=True)
     
+    train_sets = []
+    train_targets = []
+
+    val_sets = []
+    val_targets = []
+
+    test_sets = []
+    test_targets = []
+
+    for raw_index, test_index in skf.split(data, target):
+        raw_set = data[raw_index]
+        raw_target = data[raw_index]
+
+        test_sets.append(data[test_index])
+        test_targets.append(data[test_index])
+
+        train_index, val_index = next(StratifiedKFold(4, shuffle=True).split(raw_set, raw_target))
+
+        train_sets.append(raw_set[train_index])
+        train_targets.append(raw_target[train_index])
+
+        val_sets.append(raw_set[val_index])
+        val_targets.append(raw_target[val_index])
+
+    return np.array(train_sets), np.array(train_targets), np.array(val_sets), np.array(val_targets), np.array(test_sets), np.array(test_targets)
+
+
+
+
+
+    
+        
+
+
+
+# TODO 优化五折验证的代码
 
 if __name__ == '__main__':
 
