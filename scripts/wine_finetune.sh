@@ -1,0 +1,10 @@
+python train.py --backbone fcn --dataroot /dev_data/zzj/hzy/datasets/UCR --dataset Wine  --mode finetune --epoch 1000 --batch_size 32 --save_dir fcn_result --loss cross_entropy --source_dataset Crop
+python train.py --backbone fcn --dataroot /dev_data/zzj/hzy/datasets/UCR --dataset Wine  --mode finetune --epoch 1000 --batch_size 32 --save_dir fcn_result --loss cross_entropy --source_dataset ElectricDevices
+python train.py --backbone fcn --dataroot /dev_data/zzj/hzy/datasets/UCR --dataset Wine  --mode finetune --epoch 1000 --batch_size 32 --save_dir fcn_result --loss cross_entropy --source_dataset StarLightCurves
+python train.py --backbone fcn --dataroot /dev_data/zzj/hzy/datasets/UCR --dataset Wine  --mode finetune --epoch 1000 --batch_size 32 --save_dir fcn_result --loss cross_entropy --source_dataset Wafer
+python train.py --backbone fcn --dataroot /dev_data/zzj/hzy/datasets/UCR --dataset Wine  --mode finetune --epoch 1000 --batch_size 32 --save_dir fcn_result --loss cross_entropy --source_dataset TwoPatterns
+python train.py --backbone fcn --dataroot /dev_data/zzj/hzy/datasets/UCR --dataset Wine  --mode finetune --epoch 1000 --batch_size 32 --save_dir fcn_result --loss cross_entropy --source_dataset ECG5000
+python train.py --backbone fcn --dataroot /dev_data/zzj/hzy/datasets/UCR --dataset Wine  --mode finetune --epoch 1000 --batch_size 32 --save_dir fcn_result --loss cross_entropy --source_dataset FordA
+python train.py --backbone fcn --dataroot /dev_data/zzj/hzy/datasets/UCR --dataset Wine  --mode finetune --epoch 1000 --batch_size 32 --save_dir fcn_result --loss cross_entropy --source_dataset UWaveGestureLibraryX
+python train.py --backbone fcn --dataroot /dev_data/zzj/hzy/datasets/UCR --dataset Wine  --mode finetune --epoch 1000 --batch_size 32 --save_dir fcn_result --loss cross_entropy --source_dataset UWaveGestureLibraryY
+python train.py --backbone fcn --dataroot /dev_data/zzj/hzy/datasets/UCR --dataset Wine  --mode finetune --epoch 1000 --batch_size 32 --save_dir fcn_result --loss cross_entropy --source_dataset UWaveGestureLibraryZ

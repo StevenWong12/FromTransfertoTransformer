@@ -70,7 +70,10 @@ def get_k_fold(data, target):
 
 # v2. use k_fold to get the whole tran val test set
 
-def normalize_test_set(test_data, mean, var):
+def normalize_test_set(test_data, train_data):
+    mean = train_data.mean()
+    var = train_data.var()
+
     return (test_data-mean)/var
 
 def k_fold(data: np.ndarray, target:np.ndarray):

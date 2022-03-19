@@ -1,0 +1,4 @@
+*.log
+
+dilated_result
+fcn_result

@@ -1,5 +1,5 @@
 from model.model import FCN, DilatedConvolution, Classifier
-from data.preprocessing import load_data, get_k_fold, split_raw_and_test
+from data.preprocessing import load_data, get_k_fold, split_raw_and_test, k_fold
 from model.loss import cross_entropy, reconstruction_loss
 import numpy as np
 import torch
@@ -30,11 +30,12 @@ def build_model(args):
 def build_dataset(args):
     sum_dataset, sum_target, num_classes = load_data(args.dataroot, args.dataset)
     
-    # torch assert label >= 0 && label < num_classes
-    if num_classes > 2:
+    # torch assert label >= 0 && label < num_classes, wine = {0, 1}
+    if num_classes > 2 or args.dataset == 'Wine':
         sum_target -= 1
     elif num_classes == 2:
         sum_target = np.maximum(0, sum_target)
+    
     
     print(sum_target)
     return sum_dataset, sum_target, num_classes
@@ -89,3 +90,6 @@ def save_finetune_result(args, accu, var):
     result_form = result_form.append({'target':args.dataset, 'accuracy':'%.2f' % accu, 'var':'%.4f' % var}, ignore_index=True)
 
     result_form.to_csv(save_path)
+
+def get_all_datasets(data, target):
+    return k_fold(data, target)

@@ -87,8 +87,8 @@ class DilatedBlock(nn.Module):
 
 
     def forward(self, x):
-        x = self.conv_block1(x)
-        out = self.conv_block2(x)
+        out = self.conv_block1(x)
+        out = self.conv_block2(out)
 
         res = x if self.upordownsample is None else self.upordownsample(x)
 
@@ -121,7 +121,6 @@ class DilatedConvolution(nn.Module):
                                      nn.AdaptiveMaxPool1d(1),
                                      SqueezeChannels(),
                                      nn.Linear(reduced_size, out_channels),
-
                                      )
 
     def forward(self, x):
@@ -157,6 +156,7 @@ class NonLinearClassifier(nn.Module):
 class RNNDecoder(nn.Module):
     def __init__(self) -> None:
         super(RNNDecoder, self).__init__()
+        
 
     def forward(self, x):
         pass

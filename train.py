@@ -1,9 +1,9 @@
 import numpy as np
 import argparse
 
-from utils import build_model, get_raw_test_set, get_train_val_set, set_seed, build_dataset, build_loss, evaluate, save_finetune_result
+from utils import build_model, get_raw_test_set, get_train_val_set, set_seed, build_dataset, build_loss, evaluate, save_finetune_result, get_all_datasets
 from data.dataloader import UCRDataset
-from data.preprocessing import normalize
+from data.preprocessing import normalize_test_set, normalize
 from torch.utils.data import DataLoader
 import os
 import torch
@@ -74,12 +74,21 @@ if __name__ == '__main__':
         train_set = UCRDataset(sum_dataset, sum_target)
         train_loader = DataLoader(train_set, batch_size=args.batch_size, num_workers=10)
         
+        # add early stopping in pretrain
+        last_loss = 100
+        stop_count = 0
+        increase_count = 0
+
         min_loss = torch.inf
         min_epoch = 0
         model_to_save = None
 
         num_steps = train_set.__len__() // args.batch_size
         for epoch in range(args.epoch):
+            if stop_count == 10 or increase_count == 10:
+                print("model convergent at epoch {}, early stopping.".format(epoch))
+                break
+                
             model.train()
             epoch_loss = 0
             epoch_accu = 0
@@ -100,6 +109,17 @@ if __name__ == '__main__':
                 epoch_accu += torch.sum(torch.argmax(pred.data, axis=1) == y) / len(y)
             
             epoch_loss /= num_steps
+            if abs(epoch_loss - last_loss) <= 1e-4:
+                stop_count += 1
+            else:
+                stop_count = 0
+
+            if epoch_loss > last_loss:
+                increase_count += 1
+            else:
+                increase_count = 0
+                
+            last_loss = epoch_loss
             if epoch_loss < min_loss:
                 min_loss = epoch_loss
                 min_epoch = epoch
@@ -118,6 +138,8 @@ if __name__ == '__main__':
         raw_dataset, raw_target, test_dataset, test_target = get_raw_test_set(sum_dataset, sum_target)
         train_datasets, train_targets, val_datasets, val_targets = get_train_val_set(raw_dataset, raw_target)
 
+        train_datasets, train_targets, val_datasets, val_targets, test_datasets, test_targets = get_all_datasets(sum_dataset, sum_target)
+
         losses = []
         accuracies = []
         for i, train_dataset in enumerate(train_datasets):
@@ -129,16 +151,22 @@ if __name__ == '__main__':
             val_dataset = val_datasets[i]
             val_target = val_targets[i]
 
+            test_dataset = test_datasets[i]
+            test_targets = test_target[i]
+
             # normalize 
+            test_dataset = normalize_test_set(test_dataset, train_dataset)
             train_dataset = normalize(train_dataset)
             val_dataset = normalize(val_dataset)
 
+
             train_set = UCRDataset(train_dataset, train_target)
             val_set = UCRDataset(val_dataset, val_target)
-
+            test_set = UCRDataset(test_dataset, test_target)
             
             train_loader = DataLoader(train_set, batch_size=args.batch_size, num_workers=10)
             val_loader = DataLoader(val_set, batch_size=args.batch_size, num_workers=10)
+            test_loader = DataLoader(test_set, batch_size=args.batch_size, num_workers=10)
 
             train_loss = []
             train_accuracy = []
@@ -177,16 +205,17 @@ if __name__ == '__main__':
                 
                 model.eval()
                 val_loss, val_accu = evaluate(val_loader, model, classifier, loss, device)
-            
-                print("epoch : {}, train loss: {} , train accuracy : {}, \nval loss : {}, val accuracy : {}".format(epoch, epoch_train_loss, epoch_train_acc, val_loss, val_accu))
+                test_loss, test_accu = evaluate(test_loader, model, classifier, loss, device)
+
+                print("epoch : {}, train loss: {} , train accuracy : {}, \nval loss : {}, val accuracy : {}, \ntest loss : {}, test accuracy : {}".format(epoch, epoch_train_loss, epoch_train_acc, val_loss, val_accu, test_loss, test_accu))
                 
                 
                 train_loss.append(val_loss)
-                train_accuracy.append(val_accu)
+                train_accuracy.append(test_accu)
 
-                max_accuracy = max(max_accuracy, val_accu)
+                max_accuracy = max(max_accuracy, test_accu)
 
-                if abs(last_loss-val_loss) / last_loss <= 1e-4:
+                if abs(last_loss-val_loss) <= 1e-4:
                     stop_count += 1
                 else:
                     stop_count = 0 
