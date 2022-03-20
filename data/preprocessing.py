@@ -15,9 +15,13 @@ def load_data(dataroot, dataset):
     test_x = test.iloc[:, 1:]
     test_target = test.iloc[:, 0]
 
-    sum_dataset = pd.concat([train_x, test_x]).fillna(0).to_numpy(dtype=np.float32)
-    sum_target = pd.concat([train_target, test_target]).fillna(0).to_numpy(dtype=np.float32)
-
+    
+    sum_dataset = pd.concat([train_x, test_x])
+    sum_dataset = sum_dataset.fillna(sum_dataset.mean()).to_numpy(dtype=np.float32)
+    sum_target = pd.concat([train_target, test_target]).to_numpy(dtype=np.float32)
+    # sum_target = sum_target.fillna(sum_target.mean()).to_numpy(dtype=np.float32)
+    
+    
     num_classes = len(np.unique(sum_target))
     # sum_dataset = normalize(sum_dataset)
 
@@ -76,7 +80,7 @@ def normalize_test_set(test_data, train_data):
 
     return (test_data-mean)/var
 
-def k_fold(data: np.ndarray, target:np.ndarray):
+def k_fold(data, target):
     skf = StratifiedKFold(5, shuffle=True)
     
     train_sets = []
@@ -90,10 +94,10 @@ def k_fold(data: np.ndarray, target:np.ndarray):
 
     for raw_index, test_index in skf.split(data, target):
         raw_set = data[raw_index]
-        raw_target = data[raw_index]
+        raw_target = target[raw_index]
 
         test_sets.append(data[test_index])
-        test_targets.append(data[test_index])
+        test_targets.append(target[test_index])
 
         train_index, val_index = next(StratifiedKFold(4, shuffle=True).split(raw_set, raw_target))
 

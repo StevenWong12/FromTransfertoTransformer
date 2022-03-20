@@ -13,7 +13,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     # Base setup
     parser.add_argument('--backbone', type=str, default='fcn', help='encoder backbone, fcn or dilated')
-    parser.add_argument('--task', type=str, default='classification', help='classification or reconstruct')
+    parser.add_argument('--task', type=str, default='classification', help='classification or reconstruction')
     parser.add_argument('--random_seed', type=int, default=43, help='shuffle seed')
 
     # Dataset setup
@@ -40,6 +40,15 @@ if __name__ == '__main__':
     parser.add_argument('--mode', type=str, default='pretrain', help='train mode, default pretrain')
     parser.add_argument('--save_dir', type=str, default='./result')
 
+    # Decoder setup
+    parser.add_argument('--decoder_backbone', type=str, default='rnn', help='backbone of the decoder')
+    
+
+    # classifier setup
+    parser.add_argument('--classifier', type=str, default='nonlinear', help='type of classifier(linear or nonlinear)')
+    parser.add_argument('--classifier_input', type=int, default=320, help='input dim of the classifiers')
+    parser.add_argument('--classifier_embedding', type=int, default=128, help='embedding dim of the non linear classifier')
+
     # fintune setup
     parser.add_argument('--source_dataset', type=str, default=None, help='source dataset of the pretrained model')
     args = parser.parse_args()
@@ -63,13 +72,15 @@ if __name__ == '__main__':
         optimizer = torch.optim.SGD(model.parameters(),lr=args.lr, weight_decay=args.weight_decay)
 
 
-    if args.mode == 'pretrain':
+    if args.mode == 'pretrain' and args.task == 'classification':
         if not os.path.exists(args.save_dir):
             os.mkdir(args.save_dir)
 
         if not os.path.exists(os.path.join(args.save_dir, args.dataset)):
             os.mkdir(os.path.join(args.save_dir, args.dataset))
         print('{} started pretrain'.format(args.dataset))
+        
+        sum_dataset = normalize(sum_dataset)
 
         train_set = UCRDataset(sum_dataset, sum_target)
         train_loader = DataLoader(train_set, batch_size=args.batch_size, num_workers=10)
@@ -90,6 +101,7 @@ if __name__ == '__main__':
                 break
                 
             model.train()
+            classifier.train()
             epoch_loss = 0
             epoch_accu = 0
             for x, y in train_loader:
@@ -135,9 +147,6 @@ if __name__ == '__main__':
     if args.mode == 'finetune':
         print('start finetune on {}'.format(args.dataset))
 
-        raw_dataset, raw_target, test_dataset, test_target = get_raw_test_set(sum_dataset, sum_target)
-        train_datasets, train_targets, val_datasets, val_targets = get_train_val_set(raw_dataset, raw_target)
-
         train_datasets, train_targets, val_datasets, val_targets, test_datasets, test_targets = get_all_datasets(sum_dataset, sum_target)
 
         losses = []
@@ -152,7 +161,7 @@ if __name__ == '__main__':
             val_target = val_targets[i]
 
             test_dataset = test_datasets[i]
-            test_targets = test_target[i]
+            test_target = test_targets[i]
 
             # normalize 
             test_dataset = normalize_test_set(test_dataset, train_dataset)
@@ -164,7 +173,7 @@ if __name__ == '__main__':
             val_set = UCRDataset(val_dataset, val_target)
             test_set = UCRDataset(test_dataset, test_target)
             
-            train_loader = DataLoader(train_set, batch_size=args.batch_size, num_workers=10)
+            train_loader = DataLoader(train_set, batch_size=args.batch_size, num_workers=10, drop_last=True)
             val_loader = DataLoader(val_set, batch_size=args.batch_size, num_workers=10)
             test_loader = DataLoader(test_set, batch_size=args.batch_size, num_workers=10)
 
@@ -178,13 +187,15 @@ if __name__ == '__main__':
 
             num_steps = train_set.__len__() // args.batch_size
             for epoch in range(args.epoch):
-                if stop_count == 10 or increase_count == 10:
+                # early stopping in finetune
+                if stop_count == 50 or increase_count == 50:
                     print('model convergent at epoch {}, early stopping'.format(epoch))
                     break
 
                 epoch_train_loss = 0
                 epoch_train_acc = 0
                 model.train()
+                classifier.train()
                 for x, y in train_loader:
                     x, y = x.to(device), y.to(device)
                     y = y.to(torch.int64)
@@ -204,6 +215,7 @@ if __name__ == '__main__':
 
                 
                 model.eval()
+                classifier.eval()
                 val_loss, val_accu = evaluate(val_loader, model, classifier, loss, device)
                 test_loss, test_accu = evaluate(test_loader, model, classifier, loss, device)
 
@@ -234,4 +246,91 @@ if __name__ == '__main__':
         accuracies = torch.Tensor(accuracies)
         save_finetune_result(args, torch.mean(accuracies), torch.var(accuracies))
         print('Done!')
+    
+
+    if args.mode == 'pretrain' and args.task == 'reconstruction':
+        if not os.path.exists(args.save_dir):
+            os.mkdir(args.save_dir)
+
+        if not os.path.exists(os.path.join(args.save_dir, args.dataset)):
+            os.mkdir(os.path.join(args.save_dir, args.dataset))
+        print('start reconstruction on {}'.format(args.dataset))
+
+        sum_dataset, sum_target, num_classes = build_dataset(args)
+        args.num_classes = num_classes
+
+        sum_dataset = normalize(sum_dataset)
+
+        train_set = UCRDataset(sum_dataset, sum_target)
+        train_loader = DataLoader(train_set, batch_size=args.batch_size, num_workers=10)
+
+        num_steps = train_set.__len__() // args.batch_size
+        last_loss = 0
+        stop_count = 0
+        min_loss = 100
+        increase_count = 0
+        model_to_save = None
+
+        for epoch in range(args.epoch):
+            if stop_count == 10 or increase_count == 10:
+                print("model convergent at epoch {}, early stopping.".format(epoch))
+                break
+
+            model.train()
+            classifier.train()
+            epoch_loss = 0
+
+            for i, (x, _) in enumerate(train_loader):
+                # x -> (batch_size, sequence length)
+                # x_features -> (batch_size, out_channels)
+                # x_reversed -> (batch_size, sequence length), (xt, xt-1. ..., x1)
+                optimizer.zero_grad()
+                x = x.to(device)
+                x_features = model(x)
+                x_reversed = torch.fliplr(x)
+
+                # x_reversed -> (batch_size, sequence length, 1)
+                time_length = x.shape[1]
+
+                out = x_reversed[:,:,0]
+                
+                hidden1 = x_features
+                hidden2 = x_features
+                hidden3 = x_features
+
+
+                step_loss = 0
+                for i in range (time_length):
+                    hidden1, hidden2, hidden3, out = classifier(hidden1, hidden2, hidden3, out)
+                    step_loss += loss(out, x_reversed[:, :,i])
+                
+                step_loss /= time_length
+                epoch_loss += step_loss
+                step_loss.backward()
+                optimizer.step()
+
+            epoch_loss /= num_steps
+
+            print("epoch : {}, loss : {}".format(epoch, epoch_loss))
+
+            if epoch_loss < min_loss:
+                model_to_save = model.state_dict()
+                min_loss = epoch_loss
+            # early stopping judge
+            if abs(epoch_loss-last_loss) < 1e-4:
+                stop_count += 1
+            else:
+                stop_count = 0
+
+            if epoch_loss > last_loss:
+                increase_count += 1
+            else:
+                increase_count = 0
+            
+            last_loss = epoch_loss
+        
+        print('{} finished pretrain, with min loss {} '.format(args.dataset, min_loss))
+        torch.save(model_to_save, os.path.join(args.save_dir, args.dataset, 'pretrain_weights.pt'))
+
+
 

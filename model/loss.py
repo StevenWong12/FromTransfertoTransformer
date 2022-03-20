@@ -6,5 +6,6 @@ def cross_entropy():
     loss = nn.CrossEntropyLoss()
     return loss
 
-def reconstruction_loss(pred, target):
-    pass
+def reconstruction_loss():
+    loss = nn.MSELoss()
+    return loss

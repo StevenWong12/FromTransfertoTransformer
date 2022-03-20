@@ -1,4 +1,4 @@
-from model.model import FCN, DilatedConvolution, Classifier
+from model.model import FCN, DilatedConvolution, Classifier, NonLinearClassifier, RNNDecoder
 from data.preprocessing import load_data, get_k_fold, split_raw_and_test, k_fold
 from model.loss import cross_entropy, reconstruction_loss
 import numpy as np
@@ -14,16 +14,24 @@ def set_seed(args):
     np.random.seed(args.random_seed)
     # torch.random.seed(args.random_seed)
     sklearn.random.seed(args.random_seed)
+    
 
 def build_model(args):
     if args.backbone == 'fcn':
         model = FCN(args.num_classes)
-        classifier = Classifier(128, args.num_classes)
-        print(args.num_classes)
     elif args.backbone == 'dilated':
         model = DilatedConvolution(args.in_channels, args.embedding_channels,
         args.out_channels, args.depth, args.reduced_size, args.kernel_size, args.num_classes)
-        classifier = Classifier(args.out_channels, args.num_classes)
+    
+    if args.task == 'classification':
+        if args.classifier == 'nonlinear':
+            classifier = NonLinearClassifier(args.classifier_input, 128, args.num_classes)
+        elif args.classifier =='linear':
+            classifier = Classifier(args.classifier_input, args.num_classes)
+    
+    elif args.task == 'reconstruction':
+        if args.decoder_backbone == 'rnn':
+            classifier = RNNDecoder()
 
     return model, classifier
 

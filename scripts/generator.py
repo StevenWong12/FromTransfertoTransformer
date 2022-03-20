@@ -8,5 +8,6 @@ short_dataset = ['Coffee', 'Beef', 'OliveOil', 'Rock', 'PickupGestureWiimoteZ', 
                 'Wine', 'FaceFour', 'Meat', 'Car']
 
 for long in long_dataset:
-     with open('scripts/dilated_pretrain.sh', 'a') as f:
-        f.write('python train.py --backbone dilated --dataroot /dev_data/zzj/hzy/datasets/UCR --dataset '+ long +' --mode pretrain --epoch 2000 --batch_size 128 --save_dir dilated_result --loss cross_entropy  \n')    
+   for short in short_dataset:
+      with open('scripts/dilated_finetune.sh', 'a') as f:
+         f.write('python train.py --backbone dilated --dataroot /dev_data/zzj/hzy/datasets/UCR --dataset '+ short +' --mode finetune --epoch 2000 --batch_size 32 --save_dir dilated_result --loss cross_entropy --source_dataset  '+ long+'\n')    

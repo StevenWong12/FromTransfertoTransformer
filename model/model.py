@@ -146,20 +146,33 @@ class NonLinearClassifier(nn.Module):
             nn.BatchNorm1d(embedding_dim),
             nn.ReLU(),
             nn.Dropout(dropout),
-            nn.Linear(embedding_dim, output_dim)
+            nn.Linear(embedding_dim, output_dim),
+            nn.Softmax(dim=1)
         )
 
     def forward(self, x):
         return self.net(x)
 
-
+# for single step
 class RNNDecoder(nn.Module):
-    def __init__(self) -> None:
+    def __init__(self, input_dim=1, embedding_dim=128) -> None:
         super(RNNDecoder, self).__init__()
-        
+        self.grucell1 = nn.GRUCell(input_size=input_dim, hidden_size=embedding_dim)
+        self.grucell2 = nn.GRUCell(input_size=embedding_dim, hidden_size=embedding_dim)
+        self.grucell3 = nn.GRUCell(input_size=embedding_dim, hidden_size=embedding_dim)
 
-    def forward(self, x):
-        pass
+        self.linear = nn.Linear(in_features=embedding_dim, out_features=1)
+
+    # x : single time step (batch_size, 1)
+    # TODO 是否将训练循环改到train.py中
+    def forward(self, h1, h2, h3, x):
+        hidden1 = self.grucell1(x, h1)
+        hidden2 = self.grucell2(hidden1, h2)
+        hidden3 = self.grucell3(hidden2, h3)
+
+        out = self.linear(hidden3)
+
+        return hidden1, hidden2, hidden3, out
 
 
 
