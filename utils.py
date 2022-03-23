@@ -10,10 +10,11 @@ import os
 
 
 def set_seed(args):
-
+    # TODO network seed
     np.random.seed(args.random_seed)
     # torch.random.seed(args.random_seed)
     sklearn.random.seed(args.random_seed)
+    
     
 
 def build_model(args):

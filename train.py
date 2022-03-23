@@ -106,6 +106,7 @@ if __name__ == '__main__':
 
         num_steps = train_set.__len__() // args.batch_size
         for epoch in range(args.epoch-args.continue_training):
+            
             if stop_count == 10 or increase_count == 10:
                 print("model convergent at epoch {}, early stopping.".format(epoch))
                 break
@@ -167,7 +168,7 @@ if __name__ == '__main__':
         losses = []
         accuracies = []
         for i, train_dataset in enumerate(train_datasets):
-            model.load_state_dict(torch.load(os.path.join(args.save_dir, args.source_dataset, 'pretrain_weights.pt')))
+            # model.load_state_dict(torch.load(os.path.join(args.save_dir, args.source_dataset, 'pretrain_weights.pt')))
             print('{} fold start training and evaluate'.format(i))
             max_accuracy = 0
 
@@ -188,7 +189,7 @@ if __name__ == '__main__':
             test_dataset = normalize_per_series(test_dataset)
             train_dataset = normalize_per_series(train_dataset)
             val_dataset = normalize_per_series(val_dataset)
-
+            print(len(np.unique(test_target)))
             # TODO 优化运行效率
 
             train_set = UCRDataset(torch.from_numpy(train_dataset).to(device), torch.from_numpy(train_target).to(device).to(torch.int64))

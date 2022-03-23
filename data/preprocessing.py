@@ -81,8 +81,8 @@ def normalize_test_set(test_data, train_data):
     return (test_data-mean)/var
 
 def k_fold(data, target):
-    skf = StratifiedKFold(5, shuffle=True)
-    
+    #skf = StratifiedKFold(5, shuffle=True)
+    skf = StratifiedShuffleSplit(5)
     train_sets = []
     train_targets = []
 
@@ -99,8 +99,8 @@ def k_fold(data, target):
         test_sets.append(data[test_index])
         test_targets.append(target[test_index])
 
-        train_index, val_index = next(StratifiedKFold(4, shuffle=True).split(raw_set, raw_target))
-
+        # train_index, val_index = next(StratifiedKFold(4, shuffle=True).split(raw_set, raw_target))
+        train_index, val_index = next(StratifiedShuffleSplit(1).split(raw_set, raw_target))
         train_sets.append(raw_set[train_index])
         train_targets.append(raw_target[train_index])
 
