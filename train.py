@@ -168,7 +168,7 @@ if __name__ == '__main__':
         losses = []
         accuracies = []
         for i, train_dataset in enumerate(train_datasets):
-            # model.load_state_dict(torch.load(os.path.join(args.save_dir, args.source_dataset, 'pretrain_weights.pt')))
+            model.load_state_dict(torch.load(os.path.join(args.save_dir, args.source_dataset, 'pretrain_weights.pt')))
             print('{} fold start training and evaluate'.format(i))
             max_accuracy = 0
 
