@@ -110,7 +110,9 @@ def k_fold(data, target):
     return np.array(train_sets), np.array(train_targets), np.array(val_sets), np.array(val_targets), np.array(test_sets), np.array(test_targets)
 
 
-
+def normalize_per_series(data):
+    std_ = data.std(axis=1, keepdims=True)
+    return (data - data.mean(axis=1, keepdims=True)) / std_
 
 
     

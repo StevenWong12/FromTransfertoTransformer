@@ -1,10 +1,10 @@
-python train.py --backbone fcn --dataroot /dev_data/zzj/hzy/datasets/UCR --dataset Crop --mode pretrain --epoch 1000 --batch_size 128 --loss cross_entropy
-python train.py --backbone fcn --dataroot /dev_data/zzj/hzy/datasets/UCR --dataset ElectricDevices --mode pretrain --epoch 1000 --batch_size 128 --loss cross_entropy
-python train.py --backbone fcn --dataroot /dev_data/zzj/hzy/datasets/UCR --dataset StarLightCurves --mode pretrain --epoch 1000 --batch_size 128 --loss cross_entropy
-python train.py --backbone fcn --dataroot /dev_data/zzj/hzy/datasets/UCR --dataset Wafer --mode pretrain --epoch 1000 --batch_size 128 --loss cross_entropy
-python train.py --backbone fcn --dataroot /dev_data/zzj/hzy/datasets/UCR --dataset TwoPatterns --mode pretrain --epoch 1000 --batch_size 128 --loss cross_entropy
-python train.py --backbone fcn --dataroot /dev_data/zzj/hzy/datasets/UCR --dataset ECG5000 --mode pretrain --epoch 1000 --batch_size 128 --loss cross_entropy
-python train.py --backbone fcn --dataroot /dev_data/zzj/hzy/datasets/UCR --dataset FordA --mode pretrain --epoch 1000 --batch_size 128 --loss cross_entropy
-python train.py --backbone fcn --dataroot /dev_data/zzj/hzy/datasets/UCR --dataset UWaveGestureLibraryX --mode pretrain --epoch 1000 --batch_size 128 --loss cross_entropy
-python train.py --backbone fcn --dataroot /dev_data/zzj/hzy/datasets/UCR --dataset UWaveGestureLibraryY --mode pretrain --epoch 1000 --batch_size 128 --loss cross_entropy
-python train.py --backbone fcn --dataroot /dev_data/zzj/hzy/datasets/UCR --dataset UWaveGestureLibraryZ --mode pretrain --epoch 1000 --batch_size 128 --loss cross_entropy
+python train.py --backbone fcn --dataroot /dev_data/zzj/hzy/datasets/UCR --dataset Crop --mode pretrain --epoch 2000 --batch_size 128 --loss cross_entropy --save_dir ./result_v2/fcn_v2 --classifier_input 128
+python train.py --backbone fcn --dataroot /dev_data/zzj/hzy/datasets/UCR --dataset ElectricDevices --mode pretrain --epoch 2000 --batch_size 128 --loss cross_entropy --save_dir ./result_v2/fcn_v2 --classifier_input 128
+python train.py --backbone fcn --dataroot /dev_data/zzj/hzy/datasets/UCR --dataset StarLightCurves --mode pretrain --epoch 2000 --batch_size 128 --loss cross_entropy --save_dir ./result_v2/fcn_v2 --classifier_input 128
+python train.py --backbone fcn --dataroot /dev_data/zzj/hzy/datasets/UCR --dataset Wafer --mode pretrain --epoch 2000 --batch_size 128 --loss cross_entropy --save_dir ./result_v2/fcn_v2 --classifier_input 128
+python train.py --backbone fcn --dataroot /dev_data/zzj/hzy/datasets/UCR --dataset TwoPatterns --mode pretrain --epoch 2000 --batch_size 128 --loss cross_entropy --save_dir ./result_v2/fcn_v2 --classifier_input 128
+python train.py --backbone fcn --dataroot /dev_data/zzj/hzy/datasets/UCR --dataset ECG5000 --mode pretrain --epoch 2000 --batch_size 128 --loss cross_entropy --save_dir ./result_v2/fcn_v2 --classifier_input 128
+python train.py --backbone fcn --dataroot /dev_data/zzj/hzy/datasets/UCR --dataset FordA --mode pretrain --epoch 2000 --batch_size 128 --loss cross_entropy --save_dir ./result_v2/fcn_v2 --classifier_input 128
+python train.py --backbone fcn --dataroot /dev_data/zzj/hzy/datasets/UCR --dataset UWaveGestureLibraryX --mode pretrain --epoch 2000 --batch_size 128 --loss cross_entropy --save_dir ./result_v2/fcn_v2 --classifier_input 128
+python train.py --backbone fcn --dataroot /dev_data/zzj/hzy/datasets/UCR --dataset UWaveGestureLibraryY --mode pretrain --epoch 2000 --batch_size 128 --loss cross_entropy --save_dir ./result_v2/fcn_v2 --classifier_input 128
+python train.py --backbone fcn --dataroot /dev_data/zzj/hzy/datasets/UCR --dataset UWaveGestureLibraryZ --mode pretrain --epoch 2000 --batch_size 128 --loss cross_entropy --save_dir ./result_v2/fcn_v2 --classifier_input 128

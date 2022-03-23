@@ -2,12 +2,14 @@ import numpy as np
 import pandas as pd
 import os
 import torch.utils.data as data
+import torch
 
 # Dataset 仅用来加载5 fold中的一个fold
 class UCRDataset(data.Dataset):
     def __init__(self, dataset, target):
         self.dataset = dataset
-        self.dataset = np.expand_dims(self.dataset, 1)
+        #self.dataset = np.expand_dims(self.dataset, 1)
+        self.dataset = torch.unsqueeze(self.dataset, 1)
         self.target = target 
     
     def __getitem__(self, index):

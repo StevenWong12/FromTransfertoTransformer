@@ -1,5 +1,5 @@
 from model.model import FCN, DilatedConvolution, Classifier, NonLinearClassifier, RNNDecoder
-from data.preprocessing import load_data, get_k_fold, split_raw_and_test, k_fold
+from data.preprocessing import load_data, get_k_fold, split_raw_and_test, k_fold, normalize_per_series
 from model.loss import cross_entropy, reconstruction_loss
 import numpy as np
 import torch
@@ -39,7 +39,9 @@ def build_dataset(args):
     sum_dataset, sum_target, num_classes = load_data(args.dataroot, args.dataset)
     
     # torch assert label >= 0 && label < num_classes, wine = {0, 1}
-    if num_classes > 2 or args.dataset == 'Wine':
+    if args.dataset == 'ArrowHead':
+        pass
+    elif num_classes > 2 or args.dataset == 'Wine':
         sum_target -= 1
     elif num_classes == 2:
         sum_target = np.maximum(0, sum_target)
@@ -75,16 +77,20 @@ def evaluate(val_loader, model, classifier, loss, device):
     val_loss = 0
     val_accu = 0
 
+    sum_len = 0
     for data, target in val_loader:
+        '''
         data, target = data.to(device), target.to(device)
         target = target.to(torch.int64)
+        '''
         val_pred = model(data)
         val_pred = classifier(val_pred)
         val_loss += loss(val_pred, target).item()
 
         val_accu += torch.sum(torch.argmax(val_pred.data, axis=1) == target)
-
-    return val_loss/len(target), val_accu/len(target) 
+        sum_len += len(target)
+    
+    return val_loss/sum_len, val_accu/sum_len 
 
 def save_finetune_result(args, accu, var):
     save_path = os.path.join(args.save_dir, args.source_dataset, 'finetune_result.csv')
@@ -96,7 +102,7 @@ def save_finetune_result(args, accu, var):
         result_form = pd.DataFrame(columns=['target', 'accuracy', 'var'])
     
     result_form = result_form.append({'target':args.dataset, 'accuracy':'%.2f' % accu, 'var':'%.4f' % var}, ignore_index=True)
-
+    result_form = result_form.iloc[:, -3:]
     result_form.to_csv(save_path)
 
 def get_all_datasets(data, target):

@@ -3,7 +3,7 @@ import argparse
 
 from utils import build_model, get_raw_test_set, get_train_val_set, set_seed, build_dataset, build_loss, evaluate, save_finetune_result, get_all_datasets
 from data.dataloader import UCRDataset
-from data.preprocessing import normalize_test_set, normalize
+from data.preprocessing import normalize_test_set, normalize, normalize_per_series
 from torch.utils.data import DataLoader
 import os
 import torch
@@ -39,6 +39,7 @@ if __name__ == '__main__':
     parser.add_argument('--epoch', type=int, default=1000, help='training epoch')
     parser.add_argument('--mode', type=str, default='pretrain', help='train mode, default pretrain')
     parser.add_argument('--save_dir', type=str, default='./result')
+    parser.add_argument('--continue_training', type=int, default=0, help='continue training')
 
     # Decoder setup
     parser.add_argument('--decoder_backbone', type=str, default='rnn', help='backbone of the decoder')
@@ -78,12 +79,21 @@ if __name__ == '__main__':
 
         if not os.path.exists(os.path.join(args.save_dir, args.dataset)):
             os.mkdir(os.path.join(args.save_dir, args.dataset))
+        
+        if args.continue_training != 0:
+            model.load_state_dict(torch.load(os.path.join(args.save_dir, args.dataset, 'pretrain_weights.pt')))
+            classifier.load_state_dict(torch.load(os.path.join(args.save_dir, args.dataset, 'classifier_weights.pt')))
+
         print('{} started pretrain'.format(args.dataset))
         
-        sum_dataset = normalize(sum_dataset)
+        # sum_dataset = normalize(sum_dataset)
 
-        train_set = UCRDataset(sum_dataset, sum_target)
-        train_loader = DataLoader(train_set, batch_size=args.batch_size, num_workers=10)
+        # TODO 3.22 更改归一化方式
+        # 1. 单条序列进行归一化；2.valset也用trainset的mean var
+
+        sum_dataset = normalize_per_series(sum_dataset)
+        train_set = UCRDataset(torch.from_numpy(sum_dataset).to(device), torch.from_numpy(sum_target).to(device).to(torch.int64))
+        train_loader = DataLoader(train_set, batch_size=args.batch_size, num_workers=0)
         
         # add early stopping in pretrain
         last_loss = 100
@@ -95,7 +105,7 @@ if __name__ == '__main__':
         model_to_save = None
 
         num_steps = train_set.__len__() // args.batch_size
-        for epoch in range(args.epoch):
+        for epoch in range(args.epoch-args.continue_training):
             if stop_count == 10 or increase_count == 10:
                 print("model convergent at epoch {}, early stopping.".format(epoch))
                 break
@@ -105,8 +115,10 @@ if __name__ == '__main__':
             epoch_loss = 0
             epoch_accu = 0
             for x, y in train_loader:
+                '''
                 x, y = x.to(device), y.to(device)
                 y = y.to(torch.int64)
+                '''
                 optimizer.zero_grad()
                 pred = model(x)
 
@@ -138,7 +150,10 @@ if __name__ == '__main__':
                 model_to_save = model.state_dict()
 
             epoch_accu /= num_steps
-            print("epoch : {}, loss : {}, accuracy : {}".format(epoch, epoch_loss, epoch_accu))
+            if epoch % 100 == 0:
+                print("epoch : {}, loss : {}, accuracy : {}".format(epoch, epoch_loss, epoch_accu))
+                torch.save(model.state_dict(), os.path.join(args.save_dir, args.dataset, 'pretrain_weights.pt'))
+                torch.save(classifier.state_dict(), os.path.join(args.save_dir, args.dataset, 'classifier_weights.pt'))
         
         print('{} finished pretrain, with min loss {} at epoch {}'.format(args.dataset, min_loss, min_epoch))
         torch.save(model_to_save, os.path.join(args.save_dir, args.dataset, 'pretrain_weights.pt'))
@@ -163,19 +178,26 @@ if __name__ == '__main__':
             test_dataset = test_datasets[i]
             test_target = test_targets[i]
 
-            # normalize 
+            # TODO normalize per series
+            '''
             test_dataset = normalize_test_set(test_dataset, train_dataset)
             train_dataset = normalize(train_dataset)
             val_dataset = normalize(val_dataset)
+            '''
 
+            test_dataset = normalize_per_series(test_dataset)
+            train_dataset = normalize_per_series(train_dataset)
+            val_dataset = normalize_per_series(val_dataset)
 
-            train_set = UCRDataset(train_dataset, train_target)
-            val_set = UCRDataset(val_dataset, val_target)
-            test_set = UCRDataset(test_dataset, test_target)
+            # TODO 优化运行效率
+
+            train_set = UCRDataset(torch.from_numpy(train_dataset).to(device), torch.from_numpy(train_target).to(device).to(torch.int64))
+            val_set = UCRDataset(torch.from_numpy(val_dataset).to(device), torch.from_numpy(val_target).to(device).to(torch.int64))
+            test_set = UCRDataset(torch.from_numpy(test_dataset).to(device), torch.from_numpy(test_target).to(device).to(torch.int64))
             
-            train_loader = DataLoader(train_set, batch_size=args.batch_size, num_workers=10, drop_last=True)
-            val_loader = DataLoader(val_set, batch_size=args.batch_size, num_workers=10)
-            test_loader = DataLoader(test_set, batch_size=args.batch_size, num_workers=10)
+            train_loader = DataLoader(train_set, batch_size=args.batch_size, num_workers=0, drop_last=True)
+            val_loader = DataLoader(val_set, batch_size=args.batch_size, num_workers=0)
+            test_loader = DataLoader(test_set, batch_size=args.batch_size, num_workers=0)
 
             train_loss = []
             train_accuracy = []
@@ -197,8 +219,10 @@ if __name__ == '__main__':
                 model.train()
                 classifier.train()
                 for x, y in train_loader:
+                    '''
                     x, y = x.to(device), y.to(device)
                     y = y.to(torch.int64)
+                    '''
                     optimizer.zero_grad()
                     pred = model(x)
                     pred = classifier(pred)
@@ -219,7 +243,8 @@ if __name__ == '__main__':
                 val_loss, val_accu = evaluate(val_loader, model, classifier, loss, device)
                 test_loss, test_accu = evaluate(test_loader, model, classifier, loss, device)
 
-                print("epoch : {}, train loss: {} , train accuracy : {}, \nval loss : {}, val accuracy : {}, \ntest loss : {}, test accuracy : {}".format(epoch, epoch_train_loss, epoch_train_acc, val_loss, val_accu, test_loss, test_accu))
+                if epoch % 100 == 0:
+                    print("epoch : {}, train loss: {} , train accuracy : {}, \nval loss : {}, val accuracy : {}, \ntest loss : {}, test accuracy : {}".format(epoch, epoch_train_loss, epoch_train_acc, val_loss, val_accu, test_loss, test_accu))
                 
                 
                 train_loss.append(val_loss)
@@ -272,9 +297,12 @@ if __name__ == '__main__':
         model_to_save = None
 
         for epoch in range(args.epoch):
+            # remove early stopping
+            '''
             if stop_count == 10 or increase_count == 10:
                 print("model convergent at epoch {}, early stopping.".format(epoch))
                 break
+            '''
 
             model.train()
             classifier.train()
@@ -317,7 +345,7 @@ if __name__ == '__main__':
                 model_to_save = model.state_dict()
                 min_loss = epoch_loss
             # early stopping judge
-            if abs(epoch_loss-last_loss) < 1e-4:
+            if abs(epoch_loss-last_loss) < 1e-6:
                 stop_count += 1
             else:
                 stop_count = 0
