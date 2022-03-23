@@ -270,7 +270,7 @@ if __name__ == '__main__':
             print('{} fold finish training'.format(i))
 
         accuracies = torch.Tensor(accuracies)
-        save_finetune_result(args, torch.mean(accuracies), torch.var(accuracies))
+        save_finetune_result(args, torch.mean(accuracies), torch.std(accuracies))
         print('Done!')
     
 

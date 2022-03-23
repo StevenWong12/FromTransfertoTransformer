@@ -93,16 +93,16 @@ def evaluate(val_loader, model, classifier, loss, device):
     
     return val_loss/sum_len, val_accu/sum_len 
 
-def save_finetune_result(args, accu, var):
+def save_finetune_result(args, accu, std):
     save_path = os.path.join(args.save_dir, args.source_dataset, 'finetune_result.csv')
     accu = accu.cpu().numpy()
-    var = var.cpu().numpy()
+    std = std.cpu().numpy()
     if os.path.exists(save_path):
         result_form = pd.read_csv(save_path)
     else:
-        result_form = pd.DataFrame(columns=['target', 'accuracy', 'var'])
+        result_form = pd.DataFrame(columns=['target', 'accuracy', 'std'])
     
-    result_form = result_form.append({'target':args.dataset, 'accuracy':'%.2f' % accu, 'var':'%.4f' % var}, ignore_index=True)
+    result_form = result_form.append({'target':args.dataset, 'accuracy':'%.2f' % accu, 'std':'%.4f' % std}, ignore_index=True)
     result_form = result_form.iloc[:, -3:]
     result_form.to_csv(save_path)
 
