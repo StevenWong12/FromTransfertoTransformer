@@ -1,6 +1,6 @@
 # FromTransfertoTransformer
 
-This is the training code for our paper *"From Transer to Transformer"*
+This is the training code for our paper *"From Transfer to Transformer"*
 
 
 ## Usage
