@@ -3,7 +3,7 @@ import argparse
 
 from utils import build_model, get_raw_test_set, get_train_val_set, set_seed, build_dataset, build_loss, evaluate, save_finetune_result, get_all_datasets
 from data.dataloader import UCRDataset
-from data.preprocessing import normalize_test_set, normalize, normalize_per_series
+from data.preprocessing import normalize_test_set, normalize, normalize_per_series, fill_nan_value
 from torch.utils.data import DataLoader
 import os
 import torch
@@ -179,6 +179,8 @@ if __name__ == '__main__':
             test_dataset = test_datasets[i]
             test_target = test_targets[i]
 
+            train_dataset, val_dataset, test_dataset = fill_nan_value(train_dataset, val_dataset, test_dataset)
+
             # TODO normalize per series
             '''
             test_dataset = normalize_test_set(test_dataset, train_dataset)
@@ -285,10 +287,10 @@ if __name__ == '__main__':
         sum_dataset, sum_target, num_classes = build_dataset(args)
         args.num_classes = num_classes
 
-        sum_dataset = normalize(sum_dataset)
+        sum_dataset = normalize_per_series(sum_dataset)
 
-        train_set = UCRDataset(sum_dataset, sum_target)
-        train_loader = DataLoader(train_set, batch_size=args.batch_size, num_workers=10)
+        train_set = UCRDataset(torch.from_numpy(sum_dataset).to(device), torch.from_numpy(sum_target))
+        train_loader = DataLoader(train_set, batch_size=args.batch_size, num_workers=0)
 
         num_steps = train_set.__len__() // args.batch_size
         last_loss = 0
@@ -314,7 +316,6 @@ if __name__ == '__main__':
                 # x_features -> (batch_size, out_channels)
                 # x_reversed -> (batch_size, sequence length), (xt, xt-1. ..., x1)
                 optimizer.zero_grad()
-                x = x.to(device)
                 x_features = model(x)
                 x_reversed = torch.fliplr(x)
 
@@ -340,7 +341,8 @@ if __name__ == '__main__':
 
             epoch_loss /= num_steps
 
-            print("epoch : {}, loss : {}".format(epoch, epoch_loss))
+            if epoch % 100 == 0:
+                print("epoch : {}, loss : {}".format(epoch, epoch_loss))
 
             if epoch_loss < min_loss:
                 model_to_save = model.state_dict()

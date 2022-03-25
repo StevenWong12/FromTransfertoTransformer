@@ -16,8 +16,8 @@ def load_data(dataroot, dataset):
     test_target = test.iloc[:, 0]
 
     
-    sum_dataset = pd.concat([train_x, test_x])
-    sum_dataset = sum_dataset.fillna(sum_dataset.mean()).to_numpy(dtype=np.float32)
+    sum_dataset = pd.concat([train_x, test_x]).to_numpy(dtype=np.float32)
+    #sum_dataset = sum_dataset.fillna(sum_dataset.mean()).to_numpy(dtype=np.float32)
     sum_target = pd.concat([train_target, test_target]).to_numpy(dtype=np.float32)
     # sum_target = sum_target.fillna(sum_target.mean()).to_numpy(dtype=np.float32)
     
@@ -81,8 +81,8 @@ def normalize_test_set(test_data, train_data):
     return (test_data-mean)/var
 
 def k_fold(data, target):
-    #skf = StratifiedKFold(5, shuffle=True)
-    skf = StratifiedShuffleSplit(5)
+    skf = StratifiedKFold(5, shuffle=True)
+    #skf = StratifiedShuffleSplit(5)
     train_sets = []
     train_targets = []
 
@@ -99,8 +99,8 @@ def k_fold(data, target):
         test_sets.append(data[test_index])
         test_targets.append(target[test_index])
 
-        # train_index, val_index = next(StratifiedKFold(4, shuffle=True).split(raw_set, raw_target))
-        train_index, val_index = next(StratifiedShuffleSplit(1).split(raw_set, raw_target))
+        train_index, val_index = next(StratifiedKFold(4, shuffle=True).split(raw_set, raw_target))
+        # train_index, val_index = next(StratifiedShuffleSplit(1).split(raw_set, raw_target))
         train_sets.append(raw_set[train_index])
         train_targets.append(raw_target[train_index])
 
@@ -115,13 +115,19 @@ def normalize_per_series(data):
     return (data - data.mean(axis=1, keepdims=True)) / std_
 
 
-    
-        
+def fill_nan_value(train_set, val_set, test_set):
+    train_set = pd.DataFrame(train_set)
+    train_set = train_set.fillna(train_set.mean()).to_numpy(dtype=np.float32)
 
+    val_set = pd.DataFrame(val_set)
+    val_set = val_set.fillna(val_set.mean()).to_numpy(dtype=np.float32)
 
+    test_set = pd.DataFrame(test_set)
+    test_set = test_set.fillna(test_set.mean()).to_numpy(dtype=np.float32)
 
-# TODO 优化五折验证的代码
+    return train_set, val_set, test_set
 
 if __name__ == '__main__':
-
     pass
+
+

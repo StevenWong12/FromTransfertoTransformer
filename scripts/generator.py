@@ -19,6 +19,5 @@ long_dataset = sorted(long_dataset)
 short_dataset = sorted(short_dataset)   
 
 for long in long_dataset:
-   for i, dataset in enumerate(short_dataset):
-      with open('scripts/fcn_finetune_v2.sh', 'a') as f:
-         f.write('python train.py --backbone fcn --dataroot /dev_data/zzj/hzy/datasets/UCR --dataset ' + dataset +' --mode finetune --epoch 2000 --batch_size 32 --save_dir ./fcn_result_v2 --classifier_input 128 --source_dataset ' + long + '\n')
+   with open('scripts/rnn_dilated_pretrain.sh', 'a') as f:
+      f.write('python train.py --backbone dilated --dataroot /dev_data/zzj/hzy/datasets/UCR --dataset ' + long +' --mode pretrain --epoch 2000 --batch_size 128 --save_dir ./result_v3/dilated_rnn_v3  --task reconstruction --loss reconstruction\n')

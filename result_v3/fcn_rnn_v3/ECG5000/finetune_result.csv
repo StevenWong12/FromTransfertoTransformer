@@ -1,0 +1,11 @@
+,target,accuracy,std
+0,Beef,0.75,0.0589
+1,Car,0.93,0.0618
+2,Coffee,0.96,0.0498
+3,FaceFour,0.98,0.0244
+4,Meat,1.0,0.0
+5,OliveOil,0.83,0.2826
+6,PickupGestureWiimoteZ,0.1,0.0
+7,Rock,0.71,0.1336
+8,ShakeGestureWiimoteZ,0.1,0.0
+9,Wine,0.94,0.0498

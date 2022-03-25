@@ -154,7 +154,7 @@ class NonLinearClassifier(nn.Module):
 
 # for single step
 class RNNDecoder(nn.Module):
-    def __init__(self, input_dim=1, embedding_dim=128) -> None:
+    def __init__(self, input_dim=1, embedding_dim=320) -> None:
         super(RNNDecoder, self).__init__()
         self.grucell1 = nn.GRUCell(input_size=input_dim, hidden_size=embedding_dim)
         self.grucell2 = nn.GRUCell(input_size=embedding_dim, hidden_size=embedding_dim)
