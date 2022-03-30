@@ -1,8 +1,0 @@
-,target,accuracy,std
-0,Beef,0.93,0.1491
-1,Car,0.98,0.0373
-2,Coffee,1.0,0.0
-3,FaceFour,0.98,0.0373
-4,Meat,1.0,0.0
-5,OliveOil,0.8,0.2981
-6,Wine,0.95,0.0745
