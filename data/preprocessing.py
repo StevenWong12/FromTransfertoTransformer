@@ -1,10 +1,10 @@
+from textwrap import fill
 import pandas as pd
 from sklearn.model_selection import StratifiedShuffleSplit, StratifiedKFold
 from sklearn import preprocessing
 import numpy as np
 import os
 
-UCR_PATH = '/dev_data/zzj/hzy/datasets/UCR'
 
 def load_data(dataroot, dataset):
     train = pd.read_csv(os.path.join(dataroot, dataset, dataset+'_TRAIN.tsv'), sep='\t', header=None)
@@ -21,64 +21,19 @@ def load_data(dataroot, dataset):
     sum_target = pd.concat([train_target, test_target]).to_numpy(dtype=np.float32)
     # sum_target = sum_target.fillna(sum_target.mean()).to_numpy(dtype=np.float32)
     
-    
     num_classes = len(np.unique(sum_target))
-    # sum_dataset = normalize(sum_dataset)
 
     return sum_dataset, sum_target, num_classes
 
+def transfer_labels(labels):
+    indicies = np.unique(labels)
+    num_samples = labels.shape[0]
 
-def split_raw_and_test(data, target):
-    sss = StratifiedShuffleSplit(n_splits=1, test_size=0.2)
-    data = np.array(data)
-    target = np.array(target)
-
-    for train_index, test_index in sss.split(data, target):
-        return data[train_index], target[train_index], data[test_index], target[test_index]
-        
-
-# only use
-def normalize(dataset):
-    normalizer = preprocessing.StandardScaler()
-    return normalizer.fit_transform(dataset)
-
-
-def get_k_fold(data, target):
-    skf = StratifiedKFold(5, shuffle=True)
-    train_sets = []
-    val_sets = []
-    for train_index, val_index in skf.split(data, target):
-        train_sets.append(train_index)
-        val_sets.append(val_index)
-
-    val_data = []
-    val_target = []
-    for val in val_sets:
-        val_x = np.array(list(map(lambda x: data[x], val)))
-        val_y = np.array(list(map(lambda x: target[x], val)))
-
-        val_data.append(val_x)
-        val_target.append(val_y)
-
-
-    training_data = []
-    training_target = []
-    for train in train_sets:
-        train_x = np.array(list(map(lambda x: data[x], train)))
-        train_y = np.array(list(map(lambda x: target[x], train)))
-
-        training_data.append(train_x)
-        training_target.append(train_y)
-
-    return training_data, training_target, val_data, val_target
-
-# v2. use k_fold to get the whole tran val test set
-
-def normalize_test_set(test_data, train_data):
-    mean = train_data.mean()
-    var = train_data.var()
-
-    return (test_data-mean)/var
+    for i in range(num_samples):
+        new_label = np.argwhere(labels[i] == indicies)[0][0]
+        labels[i] = new_label
+    
+    return labels
 
 def k_fold(data, target):
     skf = StratifiedKFold(5, shuffle=True)
@@ -116,15 +71,18 @@ def normalize_per_series(data):
 
 
 def fill_nan_value(train_set, val_set, test_set):
-    train_set = pd.DataFrame(train_set)
-    train_set = train_set.fillna(train_set.mean()).to_numpy(dtype=np.float32)
 
-    val_set = pd.DataFrame(val_set)
-    val_set = val_set.fillna(val_set.mean()).to_numpy(dtype=np.float32)
+    ind = np.where(np.isnan(train_set))
+    col_mean = np.nanmean(train_set, axis=0)
+    col_mean[np.isnan(col_mean)] = 1e-6
 
-    test_set = pd.DataFrame(test_set)
-    test_set = test_set.fillna(test_set.mean()).to_numpy(dtype=np.float32)
+    train_set[ind] = np.take(col_mean, ind[1])
+    
+    ind_val = np.where(np.isnan(val_set))
+    val_set[ind_val] = np.take(col_mean, ind_val[1])
 
+    ind_test = np.where(np.isnan(test_set))
+    test_set[ind_test] = np.take(col_mean, ind_test[1])
     return train_set, val_set, test_set
 
 if __name__ == '__main__':

@@ -1,9 +1,9 @@
 import numpy as np
 import argparse
 
-from utils import build_model, get_raw_test_set, get_train_val_set, set_seed, build_dataset, build_loss, evaluate, save_finetune_result, get_all_datasets
+from utils import build_model,  set_seed, build_dataset, build_loss, evaluate, save_finetune_result, get_all_datasets
 from data.dataloader import UCRDataset
-from data.preprocessing import normalize_test_set, normalize, normalize_per_series, fill_nan_value
+from data.preprocessing import  normalize_per_series, fill_nan_value
 from torch.utils.data import DataLoader
 import os
 import torch
@@ -14,7 +14,7 @@ if __name__ == '__main__':
     # Base setup
     parser.add_argument('--backbone', type=str, default='fcn', help='encoder backbone, fcn or dilated')
     parser.add_argument('--task', type=str, default='classification', help='classification or reconstruction')
-    parser.add_argument('--random_seed', type=int, default=43, help='shuffle seed')
+    parser.add_argument('--random_seed', type=int, default=42, help='shuffle seed')
 
     # Dataset setup
     parser.add_argument('--dataset', type=str, default=None, help='dataset(in ucr)')
@@ -52,6 +52,7 @@ if __name__ == '__main__':
 
     # fintune setup
     parser.add_argument('--source_dataset', type=str, default=None, help='source dataset of the pretrained model')
+    parser.add_argument('--direct_train')
     args = parser.parse_args()
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -65,6 +66,7 @@ if __name__ == '__main__':
     model, classifier = build_model(args)
     model, classifier = model.to(device), classifier.to(device)
     loss = build_loss(args).to(device)
+    classifier_init_state = classifier.state_dict()
 
     if args.optimizer == 'adam':
         optimizer = torch.optim.Adam([{'params': model.parameters()}, {'params' : classifier.parameters()}], 
@@ -86,16 +88,12 @@ if __name__ == '__main__':
 
         print('{} started pretrain'.format(args.dataset))
         
-        # sum_dataset = normalize(sum_dataset)
-
-        # TODO 3.22 更改归一化方式
-        # 1. 单条序列进行归一化；2.valset也用trainset的mean var
 
         sum_dataset = normalize_per_series(sum_dataset)
         train_set = UCRDataset(torch.from_numpy(sum_dataset).to(device), torch.from_numpy(sum_target).to(device).to(torch.int64))
         train_loader = DataLoader(train_set, batch_size=args.batch_size, num_workers=0)
         
-        # add early stopping in pretrain
+        
         last_loss = 100
         stop_count = 0
         increase_count = 0
@@ -116,10 +114,7 @@ if __name__ == '__main__':
             epoch_loss = 0
             epoch_accu = 0
             for x, y in train_loader:
-                '''
-                x, y = x.to(device), y.to(device)
-                y = y.to(torch.int64)
-                '''
+         
                 optimizer.zero_grad()
                 pred = model(x)
 
@@ -169,6 +164,7 @@ if __name__ == '__main__':
         accuracies = []
         for i, train_dataset in enumerate(train_datasets):
             model.load_state_dict(torch.load(os.path.join(args.save_dir, args.source_dataset, 'pretrain_weights.pt')))
+            classifier.load_state_dict(classifier_init_state)
             print('{} fold start training and evaluate'.format(i))
             max_accuracy = 0
 
@@ -182,17 +178,10 @@ if __name__ == '__main__':
             train_dataset, val_dataset, test_dataset = fill_nan_value(train_dataset, val_dataset, test_dataset)
 
             # TODO normalize per series
-            '''
-            test_dataset = normalize_test_set(test_dataset, train_dataset)
-            train_dataset = normalize(train_dataset)
-            val_dataset = normalize(val_dataset)
-            '''
 
             test_dataset = normalize_per_series(test_dataset)
             train_dataset = normalize_per_series(train_dataset)
             val_dataset = normalize_per_series(val_dataset)
-            print(len(np.unique(test_target)))
-            # TODO 优化运行效率
 
             train_set = UCRDataset(torch.from_numpy(train_dataset).to(device), torch.from_numpy(train_target).to(device).to(torch.int64))
             val_set = UCRDataset(torch.from_numpy(val_dataset).to(device), torch.from_numpy(val_target).to(device).to(torch.int64))
@@ -222,10 +211,7 @@ if __name__ == '__main__':
                 model.train()
                 classifier.train()
                 for x, y in train_loader:
-                    '''
-                    x, y = x.to(device), y.to(device)
-                    y = y.to(torch.int64)
-                    '''
+                  
                     optimizer.zero_grad()
                     pred = model(x)
                     pred = classifier(pred)

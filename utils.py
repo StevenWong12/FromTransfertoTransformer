@@ -1,5 +1,5 @@
 from model.model import FCN, DilatedConvolution, Classifier, NonLinearClassifier, RNNDecoder
-from data.preprocessing import load_data, get_k_fold, split_raw_and_test, k_fold, normalize_per_series
+from data.preprocessing import load_data,  k_fold, normalize_per_series, transfer_labels
 from model.loss import cross_entropy, reconstruction_loss
 import numpy as np
 import torch
@@ -10,11 +10,11 @@ import os
 
 
 def set_seed(args):
-    # TODO network seed
     np.random.seed(args.random_seed)
-    # torch.random.seed(args.random_seed)
-    sklearn.random.seed(args.random_seed)
-    
+    torch.manual_seed(args.random_seed)
+    torch.cuda.manual_seed(args.random_seed)
+    torch.cuda.manual_seed_all(args.random_seed)
+
     
 
 def build_model(args):
@@ -39,26 +39,8 @@ def build_model(args):
 def build_dataset(args):
     sum_dataset, sum_target, num_classes = load_data(args.dataroot, args.dataset)
     
-    # torch assert label >= 0 && label < num_classes, wine = {0, 1}
-    if args.dataset == 'ArrowHead':
-        pass
-    elif num_classes > 2 or args.dataset == 'Wine':
-        sum_target -= 1
-    elif num_classes == 2:
-        sum_target = np.maximum(0, sum_target)
-    
-    
-    print(sum_target)
+    sum_target = transfer_labels(sum_target)
     return sum_dataset, sum_target, num_classes
-
-def get_raw_test_set(dataset, target):
-    raw_dataset, raw_target, test_dataset, test_target = split_raw_and_test(dataset, target)
-    return raw_dataset, raw_target, test_dataset, test_target
-
-def get_train_val_set(dataset, target):
-    training_data, training_target, val_data, val_target = get_k_fold(dataset, target)
-
-    return training_data, training_target, val_data, val_target
 
 
 def build_loss(args):
@@ -95,6 +77,7 @@ def evaluate(val_loader, model, classifier, loss, device):
 
 def save_finetune_result(args, accu, std):
     save_path = os.path.join(args.save_dir, args.source_dataset, 'finetune_result.csv')
+    #save_path = os.path.join(args.save_dir, 'finetune_result.csv')
     accu = accu.cpu().numpy()
     std = std.cpu().numpy()
     if os.path.exists(save_path):
@@ -102,7 +85,7 @@ def save_finetune_result(args, accu, std):
     else:
         result_form = pd.DataFrame(columns=['target', 'accuracy', 'std'])
     
-    result_form = result_form.append({'target':args.dataset, 'accuracy':'%.2f' % accu, 'std':'%.4f' % std}, ignore_index=True)
+    result_form = result_form.append({'target':args.dataset, 'accuracy':'%.4f' % accu, 'std':'%.4f' % std}, ignore_index=True)
     result_form = result_form.iloc[:, -3:]
     result_form.to_csv(save_path)
 
