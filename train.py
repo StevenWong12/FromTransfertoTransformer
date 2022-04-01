@@ -72,8 +72,8 @@ if __name__ == '__main__':
         optimizer = torch.optim.Adam([{'params': model.parameters()}, {'params' : classifier.parameters()}], 
         lr=args.lr, weight_decay=args.weight_decay)
     elif args.optimizer == 'sgd':
-        optimizer = torch.optim.SGD(model.parameters(),lr=args.lr, weight_decay=args.weight_decay)
-
+        optimizer = torch.optim.SGD([{'params': model.parameters()}, {'params' : classifier.parameters()}], 
+        lr=args.lr, weight_decay=args.weight_decay)
 
     if args.mode == 'pretrain' and args.task == 'classification':
         if not os.path.exists(args.save_dir):
