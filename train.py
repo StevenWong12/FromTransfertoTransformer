@@ -231,18 +231,20 @@ if __name__ == '__main__':
                 model.eval()
                 classifier.eval()
                 val_loss, val_accu = evaluate(val_loader, model, classifier, loss, device)
-                test_loss, test_accu = evaluate(test_loader, model, classifier, loss, device)
+   
 
                 if epoch % 100 == 0:
-                    print("epoch : {}, train loss: {} , train accuracy : {}, \nval loss : {}, val accuracy : {}, \ntest loss : {}, test accuracy : {}".format(epoch, epoch_train_loss, epoch_train_acc, val_loss, val_accu, test_loss, test_accu))
+                    print("epoch : {}, train loss: {} , train accuracy : {}, \nval loss : {}, val accuracy : {}".format(epoch, epoch_train_loss, epoch_train_acc, val_loss, val_accu))
                 
                 
                 train_loss.append(val_loss)
-                train_accuracy.append(test_accu)
                 # get test accu while val_accu become better
                 if val_accu > max_val_accu:
+                    test_loss, test_accu = evaluate(test_loader, model, classifier, loss, device)
                     max_val_accu = val_accu
                     max_accuracy = test_accu
+                    print("[update test accu]epoch : {}, train loss: {} , train accuracy : {}, \nval loss : {}, val accuracy : {}, \ntest loss : {}, test accuracy : {}".format(epoch, epoch_train_loss, epoch_train_acc, val_loss, val_accu, test_loss, test_accu))
+
 
                 if abs(last_loss-val_loss) <= 1e-4:
                     stop_count += 1
