@@ -200,6 +200,7 @@ if __name__ == '__main__':
             increase_count = 0
 
             num_steps = train_set.__len__() // args.batch_size
+            max_val_accu = 0
             for epoch in range(args.epoch):
                 # early stopping in finetune
                 if stop_count == 50 or increase_count == 50:
@@ -238,8 +239,10 @@ if __name__ == '__main__':
                 
                 train_loss.append(val_loss)
                 train_accuracy.append(test_accu)
-
-                max_accuracy = max(max_accuracy, test_accu)
+                # get test accu while val_accu become better
+                if val_accu > max_val_accu:
+                    max_val_accu = val_accu
+                    max_accuracy = test_accu
 
                 if abs(last_loss-val_loss) <= 1e-4:
                     stop_count += 1
